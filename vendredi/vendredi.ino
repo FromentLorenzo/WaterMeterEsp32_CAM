@@ -24,6 +24,7 @@
 #include "soc/rtc_cntl_reg.h"
 #include "esp_http_server.h"
 #include <HTTPClient.h>
+#include "gsc_model_fixed.h"
 
 
 //Replace with your network credentials
@@ -138,8 +139,8 @@ httpd_handle_t camera_httpd = NULL;
 
 #define ROI_X_MIN 0
 #define ROI_Y_MIN 0
-#define ROI_X_MAX 1600
-#define ROI_Y_MAX 1200
+#define ROI_X_MAX 1600 
+#define ROI_Y_MAX 1200 
 
 #define LED_CHANNEL     0
 #define LED_RESOLUTION  8 // Nombre de bits pour la résolution de PWM (de 0 à 255)
@@ -233,6 +234,47 @@ static esp_err_t capture_handler(httpd_req_t *req){
         
         return ESP_FAIL;
     }
+    // Inside capture_handler function after cropping the image
+
+    // Call the CNN model with the cropped image
+    // Inside capture_handler function after cropping the image
+
+// Convert the cropped image buffer to the correct input type for the CNN model
+    input_t input;
+    for (int y = 0; y < 28; y++) {
+        for (int x = 0; x < 28; x++) {
+            // Convert uint8_t pixel values to int16_t
+            input[y][x][0] = (int16_t)cropped_fb->buf[y * 28 + x];
+        }
+    }
+
+    // Call the CNN model with the cropped and converted image
+    output_t output;
+    cnn(input, output);
+
+// Interpret the output of the model...
+
+
+    // Interpret the output of the model
+    // For example, if your output is a classification result, find the class with the highest probability
+    int predicted_class = 0;
+    float max_probability = 0.0;
+    // Interpret the output of the model
+// Print the probability of each class
+    for (int i = 0; i < MODEL_OUTPUT_SAMPLES; i++) {
+        Serial.print("Probability of class ");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(output[i]);
+    }
+
+
+    // Now 'predicted_class' contains the predicted class of the image
+    Serial.print("Predicted class: ");
+    Serial.println(predicted_class);
+
+    // Further actions based on the predicted class can be added here
+
 
     // Set the content type and headers
     httpd_resp_set_type(req, "image/jpeg");
@@ -245,7 +287,7 @@ static esp_err_t capture_handler(httpd_req_t *req){
     // Free up the memory used for the photo capture and cropped image
     esp_camera_fb_return(fb);
     esp_camera_fb_return(cropped_fb);
-    delay(50);
+    delay(5);
 
 
     // Turn off the LED after photo capture process is complete
@@ -340,7 +382,7 @@ void setup() {
     // Wi-Fi connection
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
+        delay(50);
         Serial.print(".");
     }
     Serial.println("");
@@ -365,7 +407,7 @@ void loop() {
     // Attendre jusqu'à ce qu'il soit temps de capturer une nouvelle image
     unsigned long currentTime = millis();
     if (currentTime - lastCaptureTime < captureInterval) {
-        delay(100); // Attente courte avant de vérifier à nouveau
+        delay(10); // Attente courte avant de vérifier à nouveau
         return;
     }
     // Définir l'URL de l'endpoint de capture d'image
@@ -398,7 +440,7 @@ void loop() {
     lastCaptureTime = currentTime;
 
     // Attendre un certain temps avant de capturer une autre image
-    delay(100); // 10 secondes
+    delay(10); // 10 secondes
 }
 
 
