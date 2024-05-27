@@ -139,8 +139,8 @@ httpd_handle_t camera_httpd = NULL;
 
 #define ROI_X_MIN 0
 #define ROI_Y_MIN 0
-#define ROI_X_MAX 1600 
-#define ROI_Y_MAX 1200 
+#define ROI_X_MAX 640 
+#define ROI_Y_MAX 480 
 
 #define LED_CHANNEL     0
 #define LED_RESOLUTION  8 // Nombre de bits pour la résolution de PWM (de 0 à 255)
@@ -259,19 +259,20 @@ static esp_err_t capture_handler(httpd_req_t *req){
     // For example, if your output is a classification result, find the class with the highest probability
     int predicted_class = 0;
     float max_probability = 0.0;
-    // Interpret the output of the model
-// Print the probability of each class
+
+    // Trouver la classe avec la probabilité la plus élevée
     for (int i = 0; i < MODEL_OUTPUT_SAMPLES; i++) {
-        Serial.print("Probability of class ");
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(output[i]);
+        if (output[i] > max_probability) {
+            max_probability = output[i];
+            predicted_class = i;
+        }
     }
 
-
-    // Now 'predicted_class' contains the predicted class of the image
+    // Afficher la classe prédite et sa probabilité
     Serial.print("Predicted class: ");
     Serial.println(predicted_class);
+    Serial.print("Probability: ");
+    Serial.println(max_probability);
 
     // Further actions based on the predicted class can be added here
 
@@ -360,14 +361,14 @@ void setup() {
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000;
-    config.pixel_format = PIXFORMAT_JPEG; 
+    config.pixel_format = PIXFORMAT_GRAYSCALE; 
     
     if(psramFound()){
-        config.frame_size = FRAMESIZE_UXGA; //UXGA;
+        config.frame_size = FRAMESIZE_VGA; //UXGA;
         config.jpeg_quality = 10;
         config.fb_count = 2;
     } else {
-        config.frame_size = FRAMESIZE_UXGA;
+        config.frame_size = FRAMESIZE_VGA;
         config.jpeg_quality = 12;
         config.fb_count = 1;
     }
@@ -442,7 +443,3 @@ void loop() {
     // Attendre un certain temps avant de capturer une autre image
     delay(10); // 10 secondes
 }
-
-
-
-
